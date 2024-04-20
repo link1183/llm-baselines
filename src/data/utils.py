@@ -34,8 +34,10 @@ def get_dataset(args) -> Dict[str, np.ndarray]:
     if args.dataset == "slimpajama+shakespeare":
         slimpajama_data = get_slimpajama_data()
         shakespeare_data = get_shakespeare_data()
-        train_data = np.concatenate((slimpajama_data['train'], shakespeare_data['train']))
-        val_data = np.concatenate((slimpajama_data['val'], shakespeare_data['val']))
+        repeated_shakespeare_train = np.repeat(shakespeare_data['train'], 5)
+        repeated_shakespeare_val = np.repeat(shakespeare_data['val'], 5)
+        train_data = np.concatenate((slimpajama_data['train'], repeated_shakespeare_train))
+        val_data = np.concatenate((slimpajama_data['val'], repeated_shakespeare_val))
         return {'train': train_data, 'val': val_data}
     else:
         raise NotImplementedError(f"Unknow dataset key '{args.dataset}'")
