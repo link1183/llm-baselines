@@ -31,6 +31,12 @@ def get_dataset(args) -> Dict[str, np.ndarray]:
         return get_openwebtext2_data()
     if args.dataset == "slimpajama":
         return get_slimpajama_data()
+    if args.dataset == "slimpajama+shakespeare":
+        slimpajama_data = get_slimpajama_data()
+        shakespeare_data = get_shakespeare_data()
+        train_data = np.concatenate((slimpajama_data['train'], shakespeare_data['train']))
+        val_data = np.concatenate((slimpajama_data['val'], shakespeare_data['val']))
+        return {'train': train_data, 'val': val_data}
     else:
         raise NotImplementedError(f"Unknow dataset key '{args.dataset}'")
 
