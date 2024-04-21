@@ -117,7 +117,7 @@ class Falcon(GPTBase):
 # Example config class
 class FalconLLMConfig:
     vocab_size = 50257 # Size of the vocabulary
-    block_size = 1024 # Length of the model context
+    sequence_length = 1024 # Length of the model context
     n_layer = 12 # Number of transformer blocks
     n_head = 12 # Number of attention heads
     n_embd = 768 # Embedding dimension
