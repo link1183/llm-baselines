@@ -83,6 +83,43 @@ class TransformerBlock(nn.Module):
 
 class Falcon(GPTBase):
     """ The full Falcon LLM language model, with a config. """
+    
+    def get_parameter_group_specs(self):
+        """
+        Separates model parameters into two buckets: those that will experience
+        weight decay for regularization and those that won't (biases, and layernorm/embedding weights).
+        Returns the PyTorch optimizer object.
+        """
+        decay = set()
+        no_decay = set()
+        whitelist_weight_modules = (torch.nn.Linear,)
+        from .utils import BLACKLIST_WEIGHT_MODULES
+
+        for mn, m in self.named_modules():
+            for pn, p in m.named_parameters():
+                fpn = f"{mn}.{pn}" if mn else pn
+                if pn.endswith("bias"):
+                    no_decay.add(fpn)
+                elif pn.endswith("weight") and isinstance(m, whitelist_weight_modules):
+                    decay.add(fpn)
+                elif pn.endswith("weight") and isinstance(m, BLACKLIST_WEIGHT_MODULES):
+                    no_decay.add(fpn)
+
+        # Manually remove 'lm_head.weight' from decay set
+        decay.remove("lm_head.weight")
+
+        # Validate that we considered every parameter
+        param_dict = {pn: p for pn, p in self.named_parameters()}
+        inter_params = decay & no_decay
+        union_params = decay | no_decay
+        assert len(inter_params) == 0, f"Parameters {inter_params} made it into both decay/no_decay sets!"
+        assert len(param_dict.keys() - union_params) == 0, f"Parameters {param_dict.keys() - union_params} were not separated into either decay/no_decay set!"
+
+        # Create the PyTorch optimizer object
+        return [
+            {"params": sorted(list(decay))},
+            {"params": sorted(list(no_decay)), "weight_decay": 0.0},
+        ]
 
     def __init__(self, config):
         super().__init__(config)
@@ -114,15 +151,15 @@ class Falcon(GPTBase):
         # return logits if no target, else compute the loss
         return logits if targets is None else F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
 
-# Example config class
-class FalconLLMConfig:
-    vocab_size = 50257 # Size of the vocabulary
-    sequence_length = 1024 # Length of the model context
-    n_layer = 12 # Number of transformer blocks
-    n_head = 12 # Number of attention heads
-    n_embd = 768 # Embedding dimension
-    dropout = 0.1 # Dropout rate
+# # Example config class
+# class FalconLLMConfig:
+#     vocab_size = 50257 # Size of the vocabulary
+#     sequence_length = 1024 # Length of the model context
+#     n_layer = 12 # Number of transformer blocks
+#     n_head = 12 # Number of attention heads
+#     n_embd = 768 # Embedding dimension
+#     dropout = 0.1 # Dropout rate
 
-# Example usage
-model_config = FalconLLMConfig()
-model = Falcon(model_config)
+# # Example usage
+# model_config = FalconLLMConfig()
+# model = Falcon(model_config)
