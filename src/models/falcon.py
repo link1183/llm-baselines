@@ -108,6 +108,18 @@ class Falcon(GPTBase):
             *{f'blocks.{i}.ln1.weight' for i in range(12)},
             *{f'blocks.{i}.ln2.weight' for i in range(12)}
         })
+            # Manually add the problematic layer normalization weights to no_decay set
+        no_decay.update({
+            'transformer.h.5.ln_1.weight', 'transformer.h.9.ln_2.weight', 'transformer.h.3.ln_2.weight',
+            'transformer.h.4.ln_1.weight', 'transformer.h.4.ln_2.weight', 'transformer.h.1.ln_1.weight',
+            'transformer.h.2.ln_2.weight', 'transformer.h.7.ln_2.weight', 'transformer.h.10.ln_1.weight',
+            'transformer.h.3.ln_1.weight', 'transformer.h.11.ln_1.weight', 'transformer.h.0.ln_2.weight',
+            'transformer.ln_f.weight', 'transformer.h.0.ln_1.weight', 'transformer.h.7.ln_1.weight',
+            'transformer.h.10.ln_2.weight', 'transformer.h.6.ln_2.weight', 'transformer.h.11.ln_2.weight',
+            'transformer.h.8.ln_2.weight', 'transformer.h.1.ln_2.weight', 'transformer.h.5.ln_2.weight',
+            'transformer.h.2.ln_1.weight', 'transformer.h.6.ln_1.weight', 'transformer.h.9.ln_1.weight',
+            'transformer.h.8.ln_1.weight'
+        })
 
         # Ensure 'lm_head.weight' is handled correctly if it's tied to 'transformer.wte.weight'
         decay.discard('lm_head.weight')
