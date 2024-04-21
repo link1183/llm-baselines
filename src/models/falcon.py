@@ -91,7 +91,7 @@ class Falcon(GPTBase):
         self.blocks = nn.Sequential(*[TransformerBlock(config) for _ in range(config.n_layer)])
         self.ln_f = LayerNorm(config.n_embd)
         self.head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
-
+        
         self.sequence_length = config.sequence_length
         self.apply(self._init_weights)
 
@@ -114,15 +114,15 @@ class Falcon(GPTBase):
         # return logits if no target, else compute the loss
         return logits if targets is None else F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
 
-# # Example config class
-# class FalconLLMConfig:
-#     vocab_size = 50257 # Size of the vocabulary
-#     block_size = 1024 # Length of the model context
-#     n_layer = 12 # Number of transformer blocks
-#     n_head = 12 # Number of attention heads
-#     n_embd = 768 # Embedding dimension
-#     dropout = 0.1 # Dropout rate
+# Example config class
+class FalconLLMConfig:
+    vocab_size = 50257 # Size of the vocabulary
+    block_size = 1024 # Length of the model context
+    n_layer = 12 # Number of transformer blocks
+    n_head = 12 # Number of attention heads
+    n_embd = 768 # Embedding dimension
+    dropout = 0.1 # Dropout rate
 
-# # Example usage
-# model_config = FalconLLMConfig()
-# model = FalconLLM(model_config)
+# Example usage
+model_config = FalconLLMConfig()
+model = Falcon(model_config)
