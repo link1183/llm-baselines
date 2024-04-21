@@ -85,7 +85,7 @@ class Falcon(GPTBase):
     """ The full Falcon LLM language model, with a config. """
 
     def __init__(self, config):
-        super().__init__()
+        super().__init__(config)
         self.wte = nn.Embedding(config.vocab_size, config.n_embd)
         self.wpe = nn.Embedding(config.sequence_length, config.n_embd)
         self.blocks = nn.Sequential(*[TransformerBlock(config) for _ in range(config.n_layer)])
