@@ -109,7 +109,8 @@ class Falcon(GPTBase):
 
         # Validate that all parameters are in one of the sets
         all_params = set(param_name for param_name, _ in self.named_parameters())
-        assert all_params == decay_params | no_decay_params, "Some parameters are not assigned to a decay set."
+        missing_params = all_params - (decay_params | no_decay_params)
+        assert not missing_params, f"Some parameters are not assigned to a decay set: {missing_params}"
 
         # Create the optimizer parameter groups
         return [
