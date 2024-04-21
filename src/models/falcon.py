@@ -85,22 +85,20 @@ class Falcon(GPTBase):
     """ The full Falcon LLM language model, with a config. """
 
     def get_parameter_group_specs(self):
-        # Initialize the decay and no_decay sets
         decay_params = set()
         no_decay_params = set()
+        whitelist_weight_modules = (torch.nn.Linear,)
+        blacklist_weight_modules = (torch.nn.LayerNorm, torch.nn.Embedding)
 
-        # Define the module types that should not be decayed
-        no_decay_module_types = (torch.nn.LayerNorm, torch.nn.Embedding)
-
-        # Iterate over all modules and their parameters
         for module_name, module in self.named_modules():
             for param_name, param in module.named_parameters(recurse=False):
                 full_param_name = f"{module_name}.{param_name}" if module_name else param_name
 
-                # Check if the parameter should not be decayed
-                if isinstance(module, no_decay_module_types) or param_name.endswith('bias'):
+                if any(isinstance(module, cls) for cls in blacklist_weight_modules):
                     no_decay_params.add(full_param_name)
-                else:
+                elif param_name.endswith("bias"):
+                    no_decay_params.add(full_param_name)
+                elif param_name.endswith("weight") and isinstance(module, whitelist_weight_modules):
                     decay_params.add(full_param_name)
 
         # Ensure 'lm_head.weight' is handled correctly if it's tied to 'transformer.wte.weight'
@@ -111,8 +109,7 @@ class Falcon(GPTBase):
 
         # Validate that all parameters are in one of the sets
         all_params = set(param_name for param_name, _ in self.named_parameters())
-        missing_params = all_params - (decay_params | no_decay_params)
-        assert not missing_params, f"Some parameters are not assigned to a decay set: {missing_params}"
+        assert all_params == decay_params | no_decay_params, "Some parameters are not assigned to a decay set."
 
         # Create the optimizer parameter groups
         return [
