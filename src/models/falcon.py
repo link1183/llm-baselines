@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
+from models.base import GPTBase
+
 class LayerNorm(nn.Module):
     """ Layer normalization with an optional bias. """
 
@@ -79,7 +81,7 @@ class TransformerBlock(nn.Module):
         x = x + self.mlp(self.ln2(x))
         return x
 
-class Falcon(nn.Module):
+class Falcon(GPTBase):
     """ The full Falcon LLM language model, with a config. """
 
     def __init__(self, config):
