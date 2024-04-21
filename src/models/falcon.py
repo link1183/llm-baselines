@@ -79,7 +79,7 @@ class TransformerBlock(nn.Module):
         x = x + self.mlp(self.ln2(x))
         return x
 
-class FalconLLM(nn.Module):
+class Falcon(nn.Module):
     """ The full Falcon LLM language model, with a config. """
 
     def __init__(self, config):
