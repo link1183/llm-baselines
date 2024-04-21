@@ -106,7 +106,7 @@ class Falcon(GPTBase):
                     no_decay.add(fpn)
 
         # Manually remove 'lm_head.weight' from decay set
-        decay.remove("lm_head.weight")
+        decay.discard("lm_head.weight")
 
         # Validate that we considered every parameter
         param_dict = {pn: p for pn, p in self.named_parameters()}
@@ -120,7 +120,6 @@ class Falcon(GPTBase):
             {"params": sorted(list(decay))},
             {"params": sorted(list(no_decay)), "weight_decay": 0.0},
         ]
-
     def __init__(self, config):
         super().__init__(config)
         self.wte = nn.Embedding(config.vocab_size, config.n_embd)
