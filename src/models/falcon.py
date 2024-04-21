@@ -25,8 +25,8 @@ class CausalSelfAttention(nn.Module):
         self.value = nn.Linear(config.n_embd, config.n_embd)
         self.proj = nn.Linear(config.n_embd, config.n_embd)
         self.n_head = config.n_head
-        self.register_buffer("mask", torch.tril(torch.ones(config.block_size, config.block_size))
-                                     .view(1, 1, config.block_size, config.block_size))
+        self.register_buffer("mask", torch.tril(torch.ones(config.sequence_length, config.sequence_length))
+                                     .view(1, 1, config.sequence_length, config.sequence_length))
         self.flash_attention = True  # Assuming PyTorch >= 2.0 for FlashAttention
 
     def forward(self, x):
@@ -90,7 +90,7 @@ class Falcon(nn.Module):
         self.ln_f = LayerNorm(config.n_embd)
         self.head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
 
-        self.block_size = config.block_size
+        self.sequence_length = config.sequence_length
         self.apply(self._init_weights)
 
     def _init_weights(self, module):
@@ -101,7 +101,7 @@ class Falcon(nn.Module):
 
     def forward(self, idx, targets=None):
         b, t = idx.size()
-        assert t <= self.block_size, "Cannot forward, model block size is exhausted."
+        assert t <= self.sequence_length, "Cannot forward, model block size is exhausted."
 
         token_embeddings = self.wte(idx)
         position_embeddings = self.wpe(torch.arange(0, t, device=idx.device))
