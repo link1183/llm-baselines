@@ -2,15 +2,14 @@
 
 ## Installation and running
 
-Our submission's entrypoint is the file `entrypoint.sh`. It will install the dependencies and run the model with our parameters.
-Make sure it is executable, by running the following command.
+Make sure to install the dependencies, using the following command.
 
 ```shell
-chmod +x entrypoint.sh
+python -m pip install -r requirements.txt
 ```
 
-You can then run the script, using
+You can then run the model, with our parameters, using the following command.
 
 ```shell
-entrypoint.sh
+python src/main.py --wandb --model llama2 --lr 1e-3 --n_layer 10 --batch_size 30 --grad_clip 1.0 --iterations 23000
 ```
