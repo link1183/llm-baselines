@@ -31,7 +31,7 @@ class CausalSelfAttention(nn.Module):
                                      .view(1, 1, config.sequence_length, config.sequence_length))
         #self.flash_attention = False  # Assuming PyTorch >= 2.0 for FlashAttention
         self.flash_attention = False
-        
+
     def forward(self, x):
         B, T, C = x.size()
         k = self.key(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
@@ -168,7 +168,15 @@ class Falcon(GPTBase):
         logits = self.head(x)
 
         # return logits if no target, else compute the loss
-        return logits if targets is None else F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+        #return logits if targets is None else F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+            # Calculate loss if targets are provided
+        if targets is not None:
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
+            # Reduce the loss to a scalar
+            loss = loss.mean()  # Ensure the loss is a scalar
+            return {'loss': loss, 'logits': logits}
+        else:
+            return {'logits': logits}
 
 # # Example config class
 # class FalconLLMConfig:
