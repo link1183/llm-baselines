@@ -29,8 +29,9 @@ class CausalSelfAttention(nn.Module):
         self.n_head = config.n_head
         self.register_buffer("mask", torch.tril(torch.ones(config.sequence_length, config.sequence_length))
                                      .view(1, 1, config.sequence_length, config.sequence_length))
-        self.flash_attention = True  # Assuming PyTorch >= 2.0 for FlashAttention
-
+        #self.flash_attention = False  # Assuming PyTorch >= 2.0 for FlashAttention
+        self.flash_attention = False
+        
     def forward(self, x):
         B, T, C = x.size()
         k = self.key(x).view(B, T, self.n_head, C // self.n_head).transpose(1, 2)
