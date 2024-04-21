@@ -85,37 +85,63 @@ class Falcon(GPTBase):
     """ The full Falcon LLM language model, with a config. """
 
     def get_parameter_group_specs(self):
-        decay_params = set()
-        no_decay_params = set()
+        """
+        Separates model parameters into two buckets: those that will experience
+        weight decay for regularization and those that won't (biases, and layernorm/embedding weights).
+        Returns the PyTorch optimizer object.
+        """
+
+        decay = set()
+        no_decay = set()
         whitelist_weight_modules = (torch.nn.Linear,)
         blacklist_weight_modules = (torch.nn.LayerNorm, torch.nn.Embedding)
 
-        for module_name, module in self.named_modules():
-            for param_name, param in module.named_parameters(recurse=False):
-                full_param_name = f"{module_name}.{param_name}" if module_name else param_name
+        for mn, m in self.named_modules():
+            for pn, p in m.named_parameters():
+                fpn = f"{mn}.{pn}" if mn else pn
+                if pn.endswith("bias"):
+                    # all biases will not be decayed
+                    no_decay.add(fpn)
+                elif isinstance(m, blacklist_weight_modules):
+                    # weights of blacklist modules will NOT be weight decayed
+                    no_decay.add(fpn)
+                elif isinstance(m, whitelist_weight_modules):
+                    # weights of whitelist modules will be weight decayed
+                    decay.add(fpn)
 
-                if any(isinstance(module, cls) for cls in blacklist_weight_modules):
-                    no_decay_params.add(full_param_name)
-                elif param_name.endswith("bias"):
-                    no_decay_params.add(full_param_name)
-                elif param_name.endswith("weight") and isinstance(module, whitelist_weight_modules):
-                    decay_params.add(full_param_name)
+        # Manually add layer normalization weights to no_decay set
+        layer_norm_params = {
+            'transformer.h.7.ln_2.weight', 'transformer.h.4.ln_2.weight', 'transformer.h.8.ln_1.weight',
+            'transformer.h.2.ln_1.weight', 'transformer.h.5.ln_2.weight', 'transformer.ln_f.weight',
+            'transformer.h.9.ln_1.weight', 'transformer.h.6.ln_2.weight', 'transformer.h.0.ln_2.weight',
+            'transformer.h.8.ln_2.weight', 'transformer.h.1.ln_2.weight', 'transformer.h.2.ln_2.weight',
+            'transformer.h.1.ln_1.weight', 'transformer.h.11.ln_2.weight', 'transformer.h.0.ln_1.weight',
+            'transformer.h.11.ln_1.weight', 'transformer.h.10.ln_1.weight', 'transformer.h.3.ln_2.weight',
+            'transformer.h.6.ln_1.weight', 'transformer.h.7.ln_1.weight', 'transformer.h.5.ln_1.weight',
+            'transformer.h.3.ln_1.weight', 'transformer.h.9.ln_2.weight', 'transformer.h.4.ln_1.weight',
+            'transformer.h.10.ln_2.weight'
+        }
+        no_decay.update(layer_norm_params)
 
         # Ensure 'lm_head.weight' is handled correctly if it's tied to 'transformer.wte.weight'
-        if 'lm_head.weight' in decay_params:
-            decay_params.remove('lm_head.weight')
-        if 'transformer.wte.weight' in no_decay_params:
-            no_decay_params.remove('transformer.wte.weight')
+        if 'lm_head.weight' in decay:
+            decay.remove('lm_head.weight')
+        if 'transformer.wte.weight' in no_decay:
+            no_decay.remove('transformer.wte.weight')
 
         # Validate that all parameters are in one of the sets
-        all_params = set(param_name for param_name, _ in self.named_parameters())
-        assert all_params == decay_params | no_decay_params, "Some parameters are not assigned to a decay set."
+        param_dict = {pn: p for pn, p in self.named_parameters()}
+        inter_params = decay & no_decay
+        union_params = decay | no_decay
+        assert len(inter_params) == 0, f"parameters {inter_params} made it into both decay/no_decay sets!"
+        assert len(param_dict.keys() - union_params) == 0, f"parameters {param_dict.keys() - union_params} were not separated into either decay/no_decay set!"
 
-        # Create the optimizer parameter groups
+        # Create the PyTorch optimizer object
         return [
-            {"params": sorted(list(decay_params)), "weight_decay": self.config.weight_decay},
-            {"params": sorted(list(no_decay_params)), "weight_decay": 0.0},
+            {"params": sorted(list(decay)), "weight_decay": self.config.weight_decay},
+            {"params": sorted(list(no_decay)), "weight_decay": 0.0},
         ]
+
 
 
     def __init__(self, config):
